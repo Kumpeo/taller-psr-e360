@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taller PSR-E360</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#141414">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: un maestro de piano paciente y preciso; claro, práctico, alentador.
+   IDEA: la tapa abierta de un teclado: madera lacada negra, teclas marfil y la franja de fieltro rojo.
+   PICTURE: el teclado vivo de 3 octavas que se ilumina con la meta y con lo que el micrófono escucha.
+   COLOUR and TYPE: marfil y laca negra, fieltro rojo como acento único; Archivo para títulos, Inter para texto.
+   LAYOUT: barra de entrada arriba, índice de módulos a la izquierda, la lección con el ejercicio al centro. */
+:root{color-scheme:light dark;
+--bg:light-dark(#fbfaf6,#111111);--panel:light-dark(#ffffff,#1b1b1b);--ink:light-dark(#141414,#efe9dc);
+--muted:light-dark(#5d5a55,#a8a296);--line:light-dark(#e3ded3,#2e2c29);--felt:light-dark(#b3141f,#e0353f);
+--ok:light-dark(#17713f,#4cc488);--warn:light-dark(#9a5b00,#f0b24a);--lac:#141414;--ivory:#f7f2e6;--soft:light-dark(#f3efe6,#232220)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,Inter,sans-serif;line-height:1.08;text-wrap:balance;margin:0}
+button,input,select{font:inherit}
+.btn{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.felt{background:var(--felt);border-color:var(--felt);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--felt);outline-offset:2px}
+header{background:var(--lac);color:var(--ivory);padding:14px max(4vw,16px);display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;border-bottom:6px solid var(--felt)}
+header h1{font-size:22px;font-weight:800}
+header .sub{color:#bdb6a6;font-size:14px}
+.prog{flex:1 1 220px;display:flex;align-items:center;gap:10px;font-size:14px;color:#d8d1c1}
+.bar{flex:1;height:8px;background:#2f2d2a;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--felt);width:0;transition:width .4s}
+.inbox{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.inbox select{min-height:44px;border-radius:10px;padding:0 10px;background:#232220;color:var(--ivory);border:1px solid #444}
+.inbox .btn{background:var(--ivory);color:var(--lac);border-color:var(--ivory)}
+.meter{width:90px;height:10px;background:#2f2d2a;border-radius:9px;overflow:hidden}.meter i{display:block;height:100%;width:0;background:#4cc488}
+.status{font-size:13px;color:#d8d1c1;flex-basis:100%}
+.status.err{color:#ff9a9a}.status.ok{color:#8fe3b4}
+.layout{display:grid;grid-template-columns:280px minmax(0,1fr);max-width:1320px;margin:0 auto}
+nav{border-right:1px solid var(--line);padding:20px 16px;max-height:calc(100vh - 90px);overflow:auto;position:sticky;top:0}
+nav h3{font-size:13px;color:var(--muted);font-weight:600;margin:18px 6px 6px}
+nav button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;min-height:44px;padding:6px 10px;border:0;background:none;color:var(--ink);border-radius:8px;cursor:pointer}
+nav button:hover{background:var(--soft)}nav button.cur{background:var(--ink);color:var(--bg)}
+nav .dot{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:11px}
+nav .done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+main{padding:clamp(20px,3vw,40px) max(3vw,16px);display:grid;gap:22px}
+.crumb{color:var(--felt);font-weight:600;font-size:14px}
+main h2{font-size:clamp(30px,4vw,44px);margin-top:4px}
+.theory{max-width:70ch;color:var(--ink)}.theory p{margin:.5em 0}
+.tip{max-width:70ch;background:var(--soft);border-left:4px solid var(--felt);padding:12px 16px;border-radius:0 10px 10px 0;font-size:15px}
+.tip b{font-weight:600}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:clamp(14px,2vw,24px);display:grid;gap:16px}
+.live{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;align-items:end}
+.readout .n{font:800 clamp(40px,7vw,64px)/1 Archivo,sans-serif}
+.readout .c{font-size:14px;color:var(--muted)}
+.cents{height:8px;background:var(--soft);border-radius:9px;position:relative;margin-top:8px}.cents i{position:absolute;top:-4px;width:4px;height:16px;background:var(--ink);left:50%;transition:left .1s}
+.cents:after{content:"";position:absolute;left:50%;top:-6px;bottom:-6px;width:1px;background:var(--felt)}
+.chroma{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;height:90px;align-items:end}
+.chroma div{display:flex;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;font-size:11px;color:var(--muted)}
+.chroma span{display:block;background:var(--ink);border-radius:3px 3px 0 0;height:0;transition:height .08s;margin-bottom:3px}
+.chroma .t span{background:var(--felt)}
+.kb{position:relative;width:100%;aspect-ratio:7.2/1;min-height:90px;user-select:none}
+.kb svg{position:absolute;inset:0;width:100%;height:100%}
+.kb .w{fill:#fffdf7;stroke:#2b2a28;stroke-width:1}.kb .b{fill:#191919}
+.kb .tg.w{fill:#ffd9db}.kb .tg.b{fill:var(--felt)}
+.kb .hit.w{fill:#bdeccf}.kb .hit.b{fill:#17713f}.kb .bad.w{fill:#ffc9a8}.kb .bad.b{fill:#b0570e}
+.kb text{font:600 11px Inter,sans-serif;fill:#6b665d;pointer-events:none}
+.seq{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-width:56px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);text-align:center;font-weight:600;background:var(--bg)}
+.chip small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.chip.now{border-color:var(--felt);box-shadow:0 0 0 2px var(--felt) inset}.chip.ok{background:var(--ok);border-color:var(--ok);color:#fff}.chip.ok small{color:#e8fff1}
+.exbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.msg{font-size:15px;color:var(--muted)}.msg.ok{color:var(--ok);font-weight:600}.msg.bad{color:var(--warn);font-weight:600}
+.big{font:800 clamp(30px,5vw,46px)/1.05 Archivo,sans-serif}
+.score{height:10px;background:var(--soft);border-radius:9px;overflow:hidden;max-width:420px}.score i{display:block;height:100%;background:var(--felt);width:0;transition:width .1s}
+.beats{display:flex;flex-wrap:wrap;gap:8px}.beats span{width:28px;height:28px;border-radius:50%;border:2px solid var(--line)}.beats .on{background:var(--felt);border-color:var(--felt)}.beats .ci{border-style:dashed}
+.check label,.quiz label{display:flex;gap:12px;align-items:flex-start;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.check input,.quiz input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--felt)}
+.quiz fieldset{border:0;padding:0;margin:0 0 14px}.quiz legend{font-weight:600;margin-bottom:4px}
+.quiz .right{background:light-dark(#e3f6ea,#173524)}.quiz .wrong{background:light-dark(#fde8d8,#3a2514)}
+.done-banner{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:var(--ok);color:#fff;border-radius:12px;padding:12px 16px;font-weight:600}
+.done-banner .btn{background:#fff;color:#14532d;border-color:#fff}
+.cap{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.cap>div{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:8px}
+details.settings{color:var(--ivory)}details.settings summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px}
+.setgrid{display:grid;gap:10px;padding:10px 0;font-size:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.setgrid label{display:grid;gap:4px}.setgrid input[type=range]{accent-color:var(--felt)}
+.setgrid input[type=number]{min-height:40px;border-radius:8px;border:1px solid #444;background:#232220;color:var(--ivory);padding:0 8px;font-size:16px}
+footer{max-width:1320px;margin:0 auto;padding:24px max(3vw,16px) 48px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+footer h3{color:var(--ink);font-size:18px;margin-bottom:8px}footer ul{margin:6px 0;padding-left:20px}
+.me{--c:var(--felt);min-height:44px;padding:0 16px 0 10px;border-radius:99px;border:1px solid #444;background:#232220;color:var(--ivory);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px}
+.me:before{content:"";width:22px;height:22px;border-radius:50%;background:var(--c)}
+.who{position:fixed;inset:0;z-index:20;background:var(--lac);overflow:auto;display:grid;place-items:start center;padding:max(6vh,20px) 16px}
+.who[hidden]{display:none}
+.whobox{width:min(760px,100%);color:var(--ivory);display:grid;gap:18px}
+.whobox h2{font-size:clamp(34px,6vw,52px)}
+.faces{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+.face{display:grid;gap:6px}
+.pick{display:grid;justify-items:center;gap:6px;padding:18px 10px;border-radius:16px;border:2px solid #333;background:#1c1c1c;color:var(--ivory);cursor:pointer;font:inherit}
+.pick:hover,.pick:focus-visible{border-color:var(--felt);outline:none}
+.av{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font:800 40px Archivo,sans-serif;color:#fff}
+.pick b{font-size:20px}.pick small{color:#b8b1a2}
+.del{min-height:40px;border-radius:10px;border:1px solid #6b2a2a;background:#2a1414;color:#ffb3b3;cursor:pointer;font:inherit}
+.addf{display:flex;flex-wrap:wrap;gap:10px}.addf input{flex:1 1 220px;min-height:48px;border-radius:10px;border:1px solid #444;background:#1c1c1c;color:var(--ivory);padding:0 14px;font-size:18px}
+.whobox .btn.ghost{color:var(--ivory);border-color:#444}
+.whobox .msg{color:#d8d1c1}
+.bkp{border-top:1px solid #333;padding-top:12px;color:#d8d1c1;font-size:15px}.bkp summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
+.bkp textarea{width:100%;margin-top:10px;border-radius:10px;background:#1c1c1c;color:var(--ivory);border:1px solid #444;padding:10px;font:14px/1.4 ui-monospace,monospace}
+.navtoggle{display:none}
+@media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}nav{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);display:none}nav.open{display:block}.navtoggle{display:inline-flex;align-items:center}.live{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.kb{min-height:70px}.kb>div{font-size:9px!important}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Taller PSR‑E360</h1><div class="sub">Curso interactivo de teclado, con validación por sonido</div></div>
+  <button class="me" id="me" title="Cambiar de perfil">Perfil</button>
+  <div class="prog"><span id="pct">0%</span><div class="bar"><i id="pbar"></i></div><span id="xp">0 XP</span></div>
+  <div class="inbox">
+    <select id="src" aria-label="Fuente de entrada">
+      <option value="mic">Micrófono</option><option value="midi">MIDI (USB)</option><option value="file">Grabación (archivo)</option>
+    </select>
+    <button class="btn" id="go">Activar entrada</button>
+    <input type="file" id="file" accept="audio/*" hidden>
+    <div class="meter" title="Nivel de entrada"><i id="lvl"></i></div>
+  </div>
+  <details class="settings"><summary>Ajustes de detección</summary>
+    <div class="setgrid">
+      <label>Sensibilidad (umbral de ruido) <input type="range" id="sens" min="0.004" max="0.06" step="0.002"></label>
+      <label><span><input type="checkbox" id="oct"> Exigir la octava exacta</span></label>
+      <label>Afinación La4 (Hz) <input type="number" id="a4" min="427" max="453" step="0.2"></label>
+      <label><span><input type="checkbox" id="click"> Click del metrónomo audible</span></label>
+    </div>
+  </details>
+  <div class="status" id="status" aria-live="polite">Elige una fuente y pulsa “Activar entrada”. Las lecciones de teoría y configuración funcionan sin micrófono.</div>
+</header>
+
+<div class="who" id="who" hidden role="dialog" aria-modal="true" aria-labelledby="whot">
+  <div class="whobox">
+    <h2 id="whot">¿Quién toca hoy?</h2>
+    <div class="faces" id="faces"></div>
+    <form class="addf" id="addf"><input id="newname" maxlength="16" placeholder="Apodo nuevo (sin apellido)" aria-label="Apodo nuevo" autocomplete="off"><button class="btn felt">Agregar</button></form>
+    <div class="msg" id="addmsg" aria-live="polite"></div>
+    <div class="exbar"><button class="btn ghost" id="edit" type="button">Editar perfiles</button></div>
+    <details class="bkp"><summary>Respaldo del avance (para el adulto)</summary>
+      <p>El avance se guarda en este dispositivo. Haz un respaldo de vez en cuando, por si se borra el navegador o cambian de tablet.</p>
+      <div class="exbar"><button class="btn ghost" id="exp" type="button">Copiar respaldo</button><button class="btn ghost" id="imp" type="button">Restaurar desde el texto</button></div>
+      <textarea id="bk" rows="3" aria-label="Texto del respaldo"></textarea>
+      <div class="msg" id="bkmsg" aria-live="polite"></div>
+    </details>
+  </div>
+</div>
+
+<div class="layout">
+  <nav id="nav" aria-label="Lecciones"></nav>
+  <main id="main">
+    <button class="btn ghost navtoggle" id="navt">Ver todas las lecciones</button>
+    <div><div class="crumb" id="crumb"></div><h2 id="title"></h2></div>
+    <div class="theory" id="theory"></div>
+    <div class="tip" id="tip"></div>
+    <section class="stage" aria-label="Ejercicio">
+      <div class="kb" id="kb"></div>
+      <div class="live" id="live">
+        <div class="readout"><div class="c">Escuchando</div><div class="n" id="note">—</div>
+          <div class="c" id="hz">Sin señal</div><div class="cents"><i id="cents"></i></div></div>
+        <div><div class="c" style="font-size:14px;color:var(--muted)">Notas presentes (cromagrama)</div><div class="chroma" id="chroma"></div></div>
+      </div>
+      <div id="ex"></div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <h3>Cómo funciona por dentro (todo gratis y abierto)</h3>
+  <ul>
+    <li><b>Frontend:</b> un único archivo HTML con JavaScript puro. No usa frameworks, servidores ni cuentas.</li>
+    <li><b>Audio:</b> Web Audio API del navegador. Usa AnalyserNode con FFT de 8192 puntos y una ventana de 2048 muestras para el pitch.</li>
+    <li><b>Notas:</b> algoritmo YIN (de Cheveigné y Kawahara, 2002) con interpolación parabólica y un seguidor de notas que reconoce las repeticiones por ataque.</li>
+    <li><b>Acordes:</b> cromagrama de picos espectrales (60–2100 Hz) que se compara por correlación con plantillas de 10 tipos de acorde. Exige que suenen todas las notas del acorde (la quinta puede omitirse).</li>
+    <li><b>Ritmo:</b> detector de ataques por salto de energía. El pulso se evalúa por intervalos entre golpes, así la latencia del micrófono no afecta la nota.</li>
+    <li><b>Timbre:</b> centroide espectral, para comparar el brillo entre voces del teclado.</li>
+    <li><b>MIDI opcional:</b> Web MIDI API, en Chrome o Edge, si tu teclado o una interfaz USB‑MIDI lo permite.</li>
+    <li><b>Progreso:</b> se guarda en el almacenamiento local de este navegador y no se envía a ningún lado.</li>
+  </ul>
+  <p>El micrófono y el MIDI requieren abrir la página como archivo propio (por ejemplo, con <code>python -m http.server</code> y entrando a <code>localhost</code>, o en un hosting gratuito con HTTPS). En vistas incrustadas el navegador los bloquea. Ahí puedes subir una grabación hecha con el celular.</p>
+</footer>
+
+<script>
+/* DSP del Taller PSR-E360: YIN (pitch), cromagrama + plantillas de acordes,
+   detector de ataques, seguidor de notas y centroide espectral. Sin dependencias. */
+const DSP = (() => {
+  const NOTE = ['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+  const EN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const pc = m => ((Math.round(m) % 12) + 12) % 12;
+  const freqToMidi = (f, a4 = 440) => 69 + 12 * Math.log2(f / a4);
+  const midiToFreq = (m, a4 = 440) => a4 * 2 ** ((m - 69) / 12);
+  const midiName = m => NOTE[pc(m)] + (Math.floor(m / 12) - 1);
+
+  // YIN (de Cheveigné & Kawahara, 2002)
+  function yin(buf, sr, o = {}) {
+    const fmin = o.fmin || 60, fmax = o.fmax || 2100, thr = o.threshold || 0.12;
+    let rms = 0;
+    for (let i = 0; i < buf.length; i++) rms += buf[i] * buf[i];
+    rms = Math.sqrt(rms / buf.length);
+    const tauMax = Math.min(Math.floor(sr / fmin), Math.floor(buf.length / 2));
+    const tauMin = Math.max(2, Math.floor(sr / fmax));
+    const W = buf.length - tauMax;
+    const c = new Float32Array(tauMax + 2);
+    c[0] = 1;
+    let run = 0;
+    for (let tau = 1; tau <= tauMax; tau++) {
+      let s = 0;
+      for (let j = 0; j < W; j++) { const x = buf[j] - buf[j + tau]; s += x * x; }
+      run += s;
+      c[tau] = run > 0 ? s * tau / run : 1;
+    }
+    let tau = -1;
+    for (let t = tauMin; t <= tauMax; t++) {
+      if (c[t] < thr) { while (t + 1 <= tauMax && c[t + 1] < c[t]) t++; tau = t; break; }
+    }
+    if (tau < 0) {
+      let mv = 1e9;
+      for (let t = tauMin; t <= tauMax; t++) if (c[t] < mv) { mv = c[t]; tau = t; }
+      if (mv > 0.3) return { freq: -1, conf: 0, rms };
+    }
+    let better = tau;
+    if (tau > tauMin && tau < tauMax) {
+      const a = c[tau - 1], b = c[tau], e = c[tau + 1], den = a + e - 2 * b;
+      if (den) better = tau + (a - e) / (2 * den);
+    }
+    return { freq: sr / better, conf: 1 - c[tau], rms };
+  }
+
+  // Mapa bin FFT -> clase de altura
+  function makeChromaMap(bins, sr, fftSize, fmin = 60, fmax = 2100) {
+    const map = new Int8Array(bins).fill(-1), w = new Float32Array(bins);
+    for (let k = 1; k < bins; k++) {
+      const f = k * sr / fftSize;
+      if (f < fmin || f > fmax) continue;
+      const m = freqToMidi(f), r = Math.round(m), dev = Math.abs(m - r);
+      if (dev > 0.4) continue;
+      map[k] = pc(r); w[k] = 1 - dev;
+    }
+    return { map, w };
+  }
+  // db: Float32Array en dB (como AnalyserNode.getFloatFrequencyData)
+  function chroma(db, cm) {
+    const ch = new Float32Array(12);
+    for (let k = 1; k < db.length - 1; k++) {
+      const p = cm.map[k];
+      if (p < 0 || db[k] < db[k - 1] || db[k] < db[k + 1]) continue; // solo picos
+      ch[p] += 10 ** (db[k] / 20) * cm.w[k];
+    }
+    let mx = 0;
+    for (const v of ch) mx = Math.max(mx, v);
+    if (mx > 0) for (let i = 0; i < 12; i++) ch[i] /= mx;
+    return ch;
+  }
+  function centroid(db, sr, fftSize, fmin = 80, fmax = 8000) {
+    let num = 0, den = 0;
+    for (let k = 1; k < db.length; k++) {
+      const f = k * sr / fftSize;
+      if (f < fmin) continue; if (f > fmax) break;
+      const m = 10 ** (db[k] / 20); num += f * m; den += m;
+    }
+    return den ? num / den : 0;
+  }
+
+  // Acordes
+  const QUAL = { '': [0,4,7], 'm': [0,3,7], '7': [0,4,7,10], 'maj7': [0,4,7,11], 'm7': [0,3,7,10],
+    'sus2': [0,2,7], 'sus4': [0,5,7], 'add9': [0,2,4,7], 'dim': [0,3,6], '5': [0,7] };
+  const QNAME = { '': 'mayor', 'm': 'menor', '7': 'séptima', 'maj7': 'séptima mayor', 'm7': 'menor séptima',
+    'sus2': 'sus2', 'sus4': 'sus4', 'add9': 'add9', 'dim': 'disminuido', '5': 'quinta' };
+  function parseChord(name) {
+    const m = /^([A-G])(#|b)?(.*)$/.exec(name);
+    if (!m) throw new Error('acorde inválido ' + name);
+    let root = EN.indexOf(m[1]) + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    root = (root + 12) % 12;
+    if (!(m[3] in QUAL)) throw new Error('calidad desconocida ' + name);
+    return { root, q: m[3] };
+  }
+  const chordPcs = name => { const { root, q } = parseChord(name); return QUAL[q].map(i => (root + i) % 12); };
+  const chordLabel = name => { const { root, q } = parseChord(name); return NOTE[root] + ' ' + QNAME[q]; };
+  function template(root, q) {
+    const t = new Float32Array(12);
+    QUAL[q].forEach((i, k) => { t[(root + i) % 12] = k === 0 ? 1.15 : 1; });
+    return t;
+  }
+  function corr(a, b) {
+    let ma = 0, mb = 0;
+    for (let i = 0; i < 12; i++) { ma += a[i]; mb += b[i]; }
+    ma /= 12; mb /= 12;
+    let n = 0, da = 0, dbb = 0;
+    for (let i = 0; i < 12; i++) { const x = a[i] - ma, y = b[i] - mb; n += x * y; da += x * x; dbb += y * y; }
+    return da && dbb ? n / Math.sqrt(da * dbb) : 0;
+  }
+  function matchChord(ch, target, minScore = 0.5) {
+    const { root, q } = parseChord(target);
+    const score = corr(ch, template(root, q));
+    let rival = -1, rivalName = '';
+    const quals = new Set(['', 'm', q]);
+    for (let r = 0; r < 12; r++) for (const qq of quals) {
+      if (r === root && qq === q) continue;
+      if (r === root && QUAL[qq].every(i => QUAL[q].includes(i)) ) continue; // subconjunto del objetivo (p.ej. C dentro de Cmaj7)
+      const s = corr(ch, template(r, qq));
+      if (s > rival) { rival = s; rivalName = EN[r] + qq; }
+    }
+    // Cada nota del acorde debe estar presente (evita que C valide como Cmaj7)
+    const tones = QUAL[q].filter(i => i !== 7 || q === '5').map(i => ch[(root + i) % 12]); // la quinta se puede omitir
+    const weakest = Math.min(...tones);
+    const ok = score >= minScore && score >= rival - 0.02 && weakest >= 0.3;
+    return { score, rival, rivalName, weakest, ok };
+  }
+
+  // Detector de ataques por salto de energía
+  class OnsetDetector {
+    constructor() { this.prev = 0; this.last = -1; }
+    push(rms, t, floor = 0.015) {
+      const on = rms > floor && rms - this.prev > Math.max(floor * 0.8, this.prev * 0.45) && t - this.last > 0.12;
+      if (on) this.last = t;
+      this.prev = rms;
+      return on;
+    }
+  }
+  // Convierte el pitch por cuadro en eventos de nota
+  class NoteTracker {
+    constructor(need = 3) { this.need = need; this.cand = -1; this.cnt = 0; this.emitted = -1; this.fresh = false; this.silent = 0; }
+    update(midi, onset) {
+      if (onset) this.fresh = true;
+      if (midi < 0) { this.cand = -1; this.cnt = 0; if (++this.silent > 4) this.emitted = -1; return null; }
+      this.silent = 0;
+      if (midi === this.cand) this.cnt++; else { this.cand = midi; this.cnt = 1; }
+      if (this.cnt >= this.need && (midi !== this.emitted || this.fresh)) { this.emitted = midi; this.fresh = false; return midi; }
+      return null;
+    }
+  }
+  // Evaluación de pulso por intervalos entre ataques (inmune a la latencia)
+  function rhythmScore(onsets, bpm, beats) {
+    const P = 60 / bpm, ioi = [];
+    for (let i = 1; i < onsets.length; i++) {
+      const d = onsets[i] - onsets[i - 1];
+      if (d > P * 0.5 && d < P * 1.5) ioi.push(d - P);
+    }
+    const hits = Math.min(beats, ioi.length + (ioi.length ? 1 : 0));
+    const meanAbs = ioi.length ? ioi.reduce((s, x) => s + Math.abs(x), 0) / ioi.length : 1;
+    const mean = ioi.length ? ioi.reduce((s, x) => s + x, 0) / ioi.length : 0;
+    const cover = Math.min(1, hits / beats);
+    const score = Math.round(Math.max(0, cover * (1 - Math.min(1, meanAbs / 0.15))) * 100);
+    return { hits, meanAbsMs: Math.round(meanAbs * 1000), driftMs: Math.round(mean * 1000), score, ok: cover >= 0.8 && meanAbs < 0.07 };
+  }
+
+  return { NOTE, EN, pc, freqToMidi, midiToFreq, midiName, yin, makeChromaMap, chroma, centroid,
+    QUAL, parseChord, chordPcs, chordLabel, matchChord, corr, OnsetDetector, NoteTracker, rhythmScore };
+})();
+if (typeof module !== 'undefined') module.exports = DSP;
+
+</script>
+<script>
+{
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const N = DSP.midiName;
+
+/* ---------------- Curso ---------------- */
+const C = [
+ {m:'Conoce tu PSR‑E360', l:[
+  {id:'panel', t:'El panel, la postura y la voz de piano', type:'check',
+   th:'<p>Antes de tocar, deja el instrumento listo. La sensibilidad al toque hace que el volumen dependa de la fuerza con que pulsas: sin ella el piano suena plano y no aprendes a controlar dinámicas.</p><p>Siéntate con los antebrazos paralelos al suelo, las muñecas a la altura del teclado y los dedos curvos, como si sostuvieras una naranja. Los dedos se numeran del 1 (pulgar) al 5 (meñique).</p>',
+   tip:'<b>En tu PSR‑E360:</b> pulsa VOICE y gira el dial hasta la 001 Grand Piano. Luego entra a FUNCTION, busca Touch Response y elige 2 (Medium).',
+   items:['Encendí el teclado y elegí la voz 001 Grand Piano','Activé Touch Response (sensibilidad al toque) en FUNCTION','Encontré el botón del metrónomo y el ajuste de TEMPO','Conecté el pedal de sustain en la entrada SUSTAIN de atrás (si lo tengo)','Me senté con las muñecas a la altura del teclado y los dedos curvos']},
+  {id:'calib', t:'Calibra el micrófono con el Do central', type:'notes', seq:[60,60,60],
+   th:'<p>El Do central (Do4) es la tecla blanca justo a la izquierda del grupo de dos teclas negras que queda más al centro del teclado. Es tu punto de referencia para todo el curso.</p><p>Activa la entrada arriba y toca el Do central tres veces, separando cada golpe. Si la plataforma no lo detecta, acerca el micrófono, sube el volumen del teclado o baja el umbral en “Ajustes de detección”.</p>',
+   tip:'<b>Consejo:</b> en la sala debe haber silencio, sin música ni ventiladores fuertes. El volumen del teclado a la mitad suele bastar.'},
+  {id:'teclas', t:'Geografía del teclado', type:'quiz',
+   th:'<p>Las teclas negras vienen en grupos de 2 y de 3, y ese patrón se repite cada octava. Gracias a él encuentras cualquier nota sin contar teclas.</p>',
+   tip:'<b>Ejercicio sin sonido:</b> recorre el teclado y toca todos los Do, después todos los Fa.',
+   qs:[['¿Qué nota está justo a la izquierda del grupo de dos teclas negras?',['Do','Re','Fa','Si'],0],
+       ['¿Qué nota está justo a la izquierda del grupo de tres teclas negras?',['Mi','Fa','Sol','La'],1],
+       ['¿Cuántas teclas (blancas y negras) tiene una octava?',['7','8','12','14'],2],
+       ['¿Cuántas notas puede sonar a la vez como máximo el PSR‑E360 (polifonía)?',['16','32','64','128'],1]]}
+ ]},
+ {m:'Mano derecha', l:[
+  {id:'posdo', t:'Posición de Do: cinco dedos, cinco notas', type:'notes', seq:[60,62,64,65,67,65,64,62,60], fing:[1,2,3,4,5,4,3,2,1],
+   th:'<p>Pon el dedo 1 en Do4 y cada dedo sobre una tecla blanca consecutiva: Do‑Re‑Mi‑Fa‑Sol. Sube y baja sin mover la mano.</p><p>Toca cada nota con el mismo volumen y deja que termine de sonar antes de la siguiente (legato).</p>',
+   tip:'<b>Meta:</b> sin errores y sin mirar las manos. Repite hasta que te salga dos veces seguidas.'},
+  {id:'oda', t:'Tu primera melodía: Oda a la alegría', type:'notes', seq:[64,64,65,67,67,65,64,62,60,60,62,64,64,62,62], fing:[3,3,4,5,5,4,3,2,1,1,2,3,3,2,2],
+   th:'<p>El tema de la Novena Sinfonía de Beethoven cabe entero en la posición de Do. Las notas repetidas se cuentan: separa un poco cada golpe para que la plataforma escuche el nuevo ataque.</p>',
+   tip:'<b>En tu PSR‑E360:</b> prueba también con la voz 004 Mellow Piano y fíjate en cómo cambia el carácter.'},
+  {id:'pulso60', t:'Pulso estable a 60', type:'rhythm', bpm:60, beats:8,
+   th:'<p>Sin pulso no hay música. Escucharás 4 clicks de entrada y luego tocarás el Do central en cada tiempo, 8 veces.</p><p>La plataforma mide qué tan parejos son los intervalos entre tus golpes, sin importar el retraso del micrófono.</p>',
+   tip:'<b>Importante:</b> si usas micrófono, escucha el click con audífonos conectados al computador, o apágalo en Ajustes y sigue las luces. Si no, el micrófono capta el click.'},
+  {id:'figuras', t:'Figuras y compases', type:'quiz',
+   th:'<p>Las figuras indican cuánto dura cada nota medida en tiempos: redonda 4, blanca 2, negra 1 y corchea ½. El compás indica cuántos tiempos tiene cada grupo: 4/4 tiene cuatro negras y 3/4 tiene tres (es el vals).</p>',
+   tip:'<b>Práctica:</b> pon el metrónomo del teclado a 60 y cuenta en voz alta “1‑2‑3‑4” mientras tocas redondas, blancas y negras.',
+   qs:[['¿Cuántos tiempos dura una blanca en 4/4?',['1','2','3','4'],1],
+       ['¿Cuántas negras caben en un compás de 3/4?',['2','3','4','6'],1],
+       ['Una redonda dura lo mismo que…',['dos negras','cuatro negras','dos corcheas','una blanca'],1]]}
+ ]},
+ {m:'Acordes con la mano izquierda', l:[
+  {id:'mayores', t:'Tríadas mayores: Do, Fa y Sol', type:'chords', seq:['C','F','G'],
+   th:'<p>Un acorde mayor se arma con la fundamental, la tercera mayor (4 semitonos arriba) y la quinta (3 semitonos más). Do mayor es Do‑Mi‑Sol: tecla por medio, con los dedos 5‑3‑1 de la mano izquierda.</p><p>Mantén cada acorde hasta que la plataforma lo valide (más o menos medio segundo).</p>',
+   tip:'<b>Toca en la octava baja</b> (Do3 a Do4). Con el piano 001 el reconocimiento es más confiable que con voces de sintetizador.'},
+  {id:'menores', t:'Tríadas menores: La, Re y Mi', type:'chords', seq:['Am','Dm','Em'],
+   th:'<p>El acorde menor baja la tercera un semitono: La menor es La‑Do‑Mi. Suena más oscuro o melancólico. Fíjate que La menor y Do mayor comparten dos notas.</p>',
+   tip:'<b>Escucha:</b> toca Do mayor y luego La menor, y nota cómo cambia el color con una sola nota distinta.'},
+  {id:'prog', t:'La progresión de las mil canciones', type:'chords', seq:['C','G','Am','F'],
+   th:'<p>I–V–vi–IV en Do: Do, Sol, La menor y Fa. Está detrás de cientos de canciones pop. Busca moverte lo menos posible entre acordes usando inversiones: Sol como Si‑Re‑Sol, Fa como Do‑Fa‑La.</p>',
+   tip:'<b>Reto:</b> cuando te salga sin cortes, repítela cuatro veces seguidas con el metrónomo a 70.'},
+  {id:'construye', t:'Construye acordes', type:'quiz',
+   th:'<p>Mayor = 4 + 3 semitonos. Menor = 3 + 4. Una inversión es el mismo acorde con otra nota en el bajo: Mi‑Sol‑Do sigue siendo Do mayor.</p>',
+   tip:'<b>Truco:</b> si sabes un acorde mayor, para hacerlo menor solo bajas la nota del medio.',
+   qs:[['¿Qué notas forman La menor?',['La‑Do#‑Mi','La‑Do‑Mi','La‑Re‑Mi','La‑Do‑Fa'],1],
+       ['¿Qué notas forman Sol mayor?',['Sol‑Si‑Re','Sol‑Sib‑Re','Sol‑Do‑Mi','Sol‑Si‑Mi'],0],
+       ['Mi‑Sol‑Do es…',['Mi menor','Do mayor invertido','La menor','Sol mayor'],1]]}
+ ]},
+ {m:'Acompañamiento automático', l:[
+  {id:'style', t:'Estilos, ACMP y punto de división', type:'check',
+   th:'<p>Con el acompañamiento automático, el teclado toca batería, bajo y arreglo siguiendo los acordes que haces con la mano izquierda, a la izquierda del punto de división. La derecha queda libre para la melodía.</p><p>En “Single Finger” bastan una o dos teclas para indicar el acorde; en “Multi Finger” tocas el acorde completo, que es lo que te conviene para aprender.</p>',
+   tip:'<b>En tu PSR‑E360:</b> pulsa STYLE, elige un estilo pop o bossa y activa ACMP. Pulsa START/STOP o activa SYNC START para que arranque al tocar.',
+   items:['Elegí un estilo con el botón STYLE','Activé ACMP y comprobé que el acompañamiento sigue mis acordes','Identifiqué dónde está el punto de división','Usé INTRO/ENDING (o MAIN/AUTO FILL) para empezar y terminar','Toqué una melodía simple con la derecha sobre el acompañamiento']},
+  {id:'styleprog', t:'Progresión con el estilo sonando', type:'chords', seq:['C','Am','F','G'],
+   th:'<p>Ahora haz la progresión Do, La menor, Fa, Sol con el estilo activado. Como el acompañamiento suena los mismos acordes que tocas, el reconocimiento funciona igual o mejor.</p>',
+   tip:'<b>Ojo:</b> el acompañamiento gasta polifonía. Si se cortan notas, simplifica la mano derecha.'}
+ ]},
+ {m:'Escalas y oído', l:[
+  {id:'escdo', t:'Escala de Do mayor con paso del pulgar', type:'notes', seq:[60,62,64,65,67,69,71,72,71,69,67,65,64,62,60], fing:[1,2,3,1,2,3,4,5,4,3,2,1,3,2,1],
+   th:'<p>Para tocar más de cinco notas, el pulgar pasa por debajo de la mano después del Mi (1‑2‑3, pulgar al Fa, 1‑2‑3‑4‑5). Al bajar, el dedo 3 cruza por encima del pulgar.</p>',
+   tip:'<b>Lento primero:</b> la plataforma valida el orden, no la velocidad. La velocidad llega sola.'},
+  {id:'escsol', t:'Escala de Sol mayor: el primer sostenido', type:'notes', seq:[67,69,71,72,74,76,78,79], fing:[1,2,3,1,2,3,4,5],
+   th:'<p>Sol mayor tiene un sostenido: Fa#. Tiene la misma digitación que Do, pero en la séptima nota tocas la tecla negra.</p>',
+   tip:'<b>Desafío:</b> súbela y bájala de memoria.'},
+  {id:'pulso80', t:'Pulso a 80, dieciséis tiempos', type:'rhythm', bpm:80, beats:16,
+   th:'<p>El mismo ejercicio de pulso, más rápido y más largo. Toca cualquier nota (o un acorde) en cada tiempo.</p>',
+   tip:'<b>Respira:</b> la tensión acelera. Relaja los hombros.'},
+  {id:'oido', t:'Escucha y repite', type:'ear', pool:[60,62,64,65,67,69,71], rounds:5,
+   th:'<p>La plataforma toca una nota entre Do4 y Si4. Búscala en tu teclado y tócala. Necesitas 4 de 5 para aprobar. Para entrenar el oído no importa la octava.</p>',
+   tip:'<b>Método:</b> canta la nota antes de buscarla. Partir siempre desde Do te ayuda a medir la distancia.'}
+ ]},
+ {m:'Expresión y armonía jazz', l:[
+  {id:'septimas', t:'Acordes con séptima', type:'chords', seq:['Cmaj7','Am7','Dm7','G7'],
+   th:'<p>Agregar la séptima abre el sonido hacia el jazz. Cmaj7 es Do‑Mi‑Sol‑Si. Am7 es La‑Do‑Mi‑Sol. G7 es Sol‑Si‑Re‑Fa: la séptima dominante, que “pide” volver a Do. Puedes omitir la quinta.</p>',
+   tip:'<b>Pedal:</b> cambia el pedal en cada acorde para que no se mezclen.'},
+  {id:'add9', t:'Colores abiertos: add9 y sus', type:'chords', seq:['Cadd9','Fmaj7','Gsus4','G'],
+   th:'<p>Cadd9 (Do‑Re‑Mi‑Sol) suena luminoso y amplio. Gsus4 (Sol‑Do‑Re) deja la tercera en suspenso y la resuelve al pasar a Sol mayor. Son la base del sonido “de paisaje”.</p>',
+   tip:'<b>Reparte:</b> la izquierda hace Do‑Sol (quinta abierta) y la derecha Re‑Mi‑Sol.'},
+  {id:'pedal', t:'Pedal y polifonía', type:'quiz',
+   th:'<p>En el pedal sincopado tocas el acorde nuevo y justo después levantas y vuelves a pisar el pedal. Así no queda un hueco ni se ensucia el sonido. Recuerda que el PSR‑E360 tiene 32 notas de polifonía: con el pedal pisado y la voz Dual activada se gastan rápido.</p>',
+   tip:'<b>Práctica:</b> Do mayor y luego Fa mayor, lento, cambiando el pedal sin que se escuche el corte.',
+   qs:[['En el pedal sincopado, ¿cuándo vuelves a pisar?',['Antes de tocar el acorde nuevo','Justo después de tocar el acorde nuevo','Al final del compás','Nunca se levanta'],1],
+       ['¿Por qué con Dual conviene tocar acordes de 3 o 4 notas?',['Porque Dual baja el volumen','Porque cada nota usa dos voces de polifonía','Porque Dual desactiva el pedal','No importa'],1]]}
+ ]},
+ {m:'El sonido Metheny y Gabin', l:[
+  {id:'metheny', t:'Configura el piano de “Dream of the Return”', type:'check',
+   th:'<p>Lyle Mays, el tecladista del Pat Metheny Group, combinaba el piano acústico con capas de sintetizador. Con el PSR‑E360 te puedes acercar mezclando un piano con un pad suave por debajo.</p>',
+   tip:'<b>Atajo:</b> prueba también la 007 Dream y la 006 Piano Strings, que ya vienen como capas de piano.',
+   items:['Elegí 001 Grand Piano (o 004 Mellow si lo siento muy brillante)','Activé Dual y elegí un pad o cuerdas suaves como segunda voz','Bajé el volumen de la voz Dual hasta la mitad del piano, más o menos','Elegí una reverb tipo Hall y subí un poco su nivel','Toqué con pedal y voicings abiertos de 3 o 4 notas']},
+  {id:'voicing', t:'Voicings abiertos estilo Lyle Mays', type:'chords', seq:['Cadd9','Am7','Fmaj7','Gsus4'],
+   th:'<p>Con tu configuración Metheny, toca esta progresión con la izquierda en quintas abiertas y la derecha con las tensiones arriba. Cada acorde debe sonar completo.</p>',
+   tip:'<b>Con Dual activo</b> el pad también entra al análisis. Si cuesta validar, bájale el volumen al pad mientras practicas.'},
+  {id:'brillo', t:'Mide el brillo: Bright contra Mellow', type:'bright',
+   th:'<p>Para el sonido lounge de “La Maison” (Gabin) conviene un piano más opaco. Aquí lo compruebas midiendo el sonido. Primero toca un acorde de Do mayor con la 003 Bright Piano y captura (A). Después cambia a la 004 Mellow Piano y captura (B). La plataforma calcula el centroide espectral, que mide cuánto “brillo” tiene el sonido.</p>',
+   tip:'<b>Toca igual</b> las dos veces: mismo acorde, misma fuerza y misma distancia al micrófono.'},
+  {id:'gabin', t:'Configura el piano de “La Maison”', type:'check',
+   th:'<p>Gabin es un dúo italiano de nu‑jazz. Su piano suena cercano, opaco y medio vintage, como sampleado. Busca un piano solo, seco y rítmico.</p>',
+   tip:'<b>Prueba:</b> la 002 Mono Grand Piano le da un aire de disco antiguo.',
+   items:['Elegí 002 Mono Grand o 004 Mellow Piano','Dejé Dual desactivado (piano solo)','Elegí una reverb corta tipo Room','Si el Master EQ tiene una opción más opaca, la usé','Toqué acordes cortos y rítmicos sobre un estilo bossa o lounge con ACMP']}
+ ]}
+];
+const ALL = C.flatMap((mod, mi) => mod.l.map(l => ({...l, mod: mod.m, mi})));
+
+/* ---------------- Estado ---------------- */
+/* Perfiles: cada niño tiene su avance; los ajustes de audio son del dispositivo */
+const KEY = 'psr360v2';
+let D = {profiles: {}, order: [], active: null, set: {src:'mic', oct:false, sens:0.015, a4:440, click:true}};
+try {
+  const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (raw) D = {...D, ...raw, set: {...D.set, ...(raw.set || {})}};
+  else {
+    const old = JSON.parse(localStorage.getItem('psr360') || 'null');
+    if (old) {
+      ['src','oct','sens','a4','click'].forEach(k => { if (k in old) D.set[k] = old[k]; });
+      if (old.done && Object.keys(old.done).length) { const id = 'p' + Date.now(); D.profiles[id] = {name:'Yo', color:0, done:old.done, best:old.best || {}, cur:old.cur || 'panel'}; D.order = [id]; D.active = id; }
+    }
+  }
+} catch (e) {}
+const S = D.set;
+let P = D.profiles[D.active] || null;
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(D)); } catch (e) {} };
+const same = (a, b) => S.oct ? a === b : ((a - b) % 12 + 12) % 12 === 0;
+
+/* ---------------- Audio ---------------- */
+const A = {ctx:null, input:null, an:null, anF:null, buf:null, fbuf:null, cm:null, src:null, stream:null, suppress:0, run:false, midi:null};
+const held = new Set();
+async function ctx() {
+  if (!A.ctx) {
+    A.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    A.input = A.ctx.createGain();
+    A.an = A.ctx.createAnalyser(); A.an.fftSize = 2048;
+    A.anF = A.ctx.createAnalyser(); A.anF.fftSize = 8192; A.anF.smoothingTimeConstant = 0.4;
+    A.input.connect(A.an); A.input.connect(A.anF);
+    A.buf = new Float32Array(2048); A.fbuf = new Float32Array(4096);
+    A.cm = DSP.makeChromaMap(4096, A.ctx.sampleRate, 8192);
+  }
+  if (A.ctx.state === 'suspended') await A.ctx.resume();
+  return A.ctx;
+}
+function stopSrc() {
+  try { if (A.src) { A.src.disconnect(); if (A.src.stop) A.src.stop(); } } catch (e) {}
+  if (A.stream) A.stream.getTracks().forEach(t => t.stop());
+  A.src = null; A.stream = null;
+}
+const status = (t, cls = '') => { const s = $('#status'); s.textContent = t; s.className = 'status ' + cls; };
+async function startMic() {
+  await ctx();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return status('Este navegador no da acceso al micrófono aquí. Abre la página como archivo propio (localhost o HTTPS) o usa “Grabación”.', 'err');
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+    stopSrc(); A.stream = st; A.src = A.ctx.createMediaStreamSource(st); A.src.connect(A.input);
+    status('Micrófono activo. Toca algo y mira el medidor.', 'ok'); loop();
+  } catch (e) {
+    status('El micrófono fue bloqueado (' + e.name + '). Si estás en una vista incrustada, abre la página en tu navegador, o sube una grabación.', 'err');
+  }
+}
+async function startMidi() {
+  await ctx();
+  if (!navigator.requestMIDIAccess) return status('Web MIDI no está disponible en este navegador. Usa Chrome o Edge, o el micrófono.', 'err');
+  try {
+    const acc = await navigator.requestMIDIAccess();
+    const ins = [...acc.inputs.values()];
+    if (!ins.length) return status('No hay dispositivos MIDI conectados. Conecta el teclado por USB (si tu modelo lo permite) o una interfaz USB‑MIDI.', 'err');
+    ins.forEach(i => i.onmidimessage = onMidi);
+    status('MIDI activo: ' + ins.map(i => i.name).join(', '), 'ok');
+  } catch (e) { status('Acceso MIDI bloqueado (' + e.name + ').', 'err'); }
+}
+function onMidi(e) {
+  const [st, n, v] = e.data, cmd = st & 0xf0;
+  const ex = EX;
+  if (cmd === 0x90 && v > 0) {
+    held.add(n); kb.live(n, true);
+    $('#note').textContent = N(n); $('#hz').textContent = 'MIDI · velocidad ' + v;
+    if (ex) { ex.onOnset && ex.onOnset(A.ctx.currentTime); ex.onNote && ex.onNote(n); ex.onMidiChord && ex.onMidiChord(held); }
+  } else if (cmd === 0x80 || (cmd === 0x90 && v === 0)) { held.delete(n); kb.live(n, false); }
+}
+async function startFile(f) {
+  await ctx();
+  try {
+    const b = await A.ctx.decodeAudioData(await f.arrayBuffer());
+    stopSrc();
+    const s = A.ctx.createBufferSource(); s.buffer = b; s.connect(A.input); s.connect(A.ctx.destination);
+    s.onended = () => status('La grabación terminó. Puedes subir otra.', '');
+    A.src = s; s.start(); loop();
+    status('Analizando “' + f.name + '” (' + b.duration.toFixed(1) + ' s)…', 'ok');
+  } catch (e) { status('No pude leer ese archivo de audio. Prueba con .wav, .mp3 o .m4a.', 'err'); }
+}
+const tracker = new DSP.NoteTracker(), onset = new DSP.OnsetDetector();
+function loop() { if (A.run) return; A.run = true; const f = () => { analyze(); requestAnimationFrame(f); }; requestAnimationFrame(f); }
+let liveMidi = -1;
+function analyze() {
+  A.an.getFloatTimeDomainData(A.buf); A.anF.getFloatFrequencyData(A.fbuf);
+  const t = A.ctx.currentTime, sr = A.ctx.sampleRate;
+  const p = DSP.yin(A.buf, sr), rms = p.rms;
+  $('#lvl').style.width = Math.min(100, rms / 0.2 * 100) + '%';
+  let midi = -1, cents = 0;
+  if (rms > S.sens && p.freq > 0 && p.conf > 0.85) { const m = DSP.freqToMidi(p.freq, S.a4); midi = Math.round(m); cents = Math.round((m - midi) * 100); }
+  const on = onset.push(rms, t, S.sens);
+  const ch = rms > S.sens ? DSP.chroma(A.fbuf, A.cm) : null;
+  const cen = rms > S.sens ? DSP.centroid(A.fbuf, sr, 8192) : 0;
+  if (t < A.suppress) return;
+  const ev = tracker.update(midi, on);
+  if (midi !== liveMidi) { if (liveMidi >= 0) kb.live(liveMidi, false); if (midi >= 0) kb.live(midi, true); liveMidi = midi; }
+  $('#note').textContent = midi >= 0 ? N(midi) : '—';
+  $('#hz').textContent = midi >= 0 ? p.freq.toFixed(1) + ' Hz · ' + (cents > 0 ? '+' : '') + cents + ' cents' : (rms > S.sens ? 'Señal sin altura clara (acorde o ruido)' : 'Sin señal');
+  $('#cents').style.left = (50 + cents) + '%';
+  drawChroma(ch);
+  const ex = EX; if (!ex) return;
+  if (on && ex.onOnset) ex.onOnset(t);
+  if (ev != null && ex.onNote) ex.onNote(ev);
+  if (ex.onFrame) ex.onFrame({midi, rms, ch, cen, t});
+}
+function synth(midis, when, dur = 0.9) {
+  const c = A.ctx, g = c.createGain(); g.connect(c.destination);
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.25 / Math.sqrt(midis.length), when + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  midis.forEach(m => [1, 2, 3].forEach((h, i) => { const o = c.createOscillator(), og = c.createGain(); o.type = i ? 'sine' : 'triangle'; o.frequency.value = DSP.midiToFreq(m, S.a4) * h; og.gain.value = [1, .35, .15][i]; o.connect(og); og.connect(g); o.start(when); o.stop(when + dur + 0.05); }));
+  A.suppress = Math.max(A.suppress, when + dur + 0.35);
+}
+async function play(groups, gap = 0.55) { await ctx(); let t = A.ctx.currentTime + 0.1; groups.forEach(g => { synth(g, t, gap * 1.6); t += gap; }); }
+function click(when, accent) {
+  if (!S.click) return;
+  const c = A.ctx, o = c.createOscillator(), g = c.createGain(); o.frequency.value = accent ? 1500 : 1000;
+  g.gain.setValueAtTime(0.3, when); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05); o.connect(g); g.connect(c.destination); o.start(when); o.stop(when + 0.06);
+}
+
+/* ---------------- Teclado SVG ---------------- */
+const kb = (() => {
+  const LO = 48, HI = 84, el = $('#kb'), wk = [], bk = [];
+  for (let m = LO; m <= HI; m++) ([1,3,6,8,10].includes(m % 12) ? bk : wk).push(m);
+  const W = 100 / wk.length;
+  let svg = `<svg viewBox="0 0 100 14" preserveAspectRatio="none" role="img" aria-label="Teclado de Do3 a Do6">`;
+  wk.forEach((m, i) => { svg += `<rect class="w" data-m="${m}" x="${i * W}" y="0" width="${W}" height="14" rx=".3"/>`; });
+  bk.forEach(m => { const i = wk.indexOf(m - 1); svg += `<rect class="b" data-m="${m}" x="${(i + 1) * W - W * 0.3}" y="0" width="${W * 0.6}" height="8.6" rx=".2"/>`; });
+  svg += '</svg>';
+  el.innerHTML = svg;
+  const labels = document.createElement('div');
+  labels.style.cssText = 'position:absolute;inset:auto 0 4px 0;display:grid;grid-template-columns:repeat(' + wk.length + ',minmax(0,1fr));pointer-events:none;font:600 11px Inter,sans-serif;color:#6b665d;text-align:center';
+  labels.innerHTML = wk.map(m => `<span>${m % 12 === 0 ? N(m) : ''}</span>`).join('');
+  el.appendChild(labels);
+  const key = m => el.querySelector(`[data-m="${m}"]`);
+  return {
+    target(ms) { el.querySelectorAll('.tg').forEach(k => k.classList.remove('tg')); (ms || []).forEach(m => { const k = key(m); if (k) k.classList.add('tg'); }); },
+    live(m, on) { const k = key(m) || key(LO + ((m - LO) % 12 + 12) % 12 + 12); if (k) k.classList.toggle('hit', on); },
+    bad(m) { const k = key(m) || key(48 + ((m % 12) + 12) % 12 + 12); if (!k) return; k.classList.add('bad'); setTimeout(() => k.classList.remove('bad'), 500); }
+  };
+})();
+const chromaEl = $('#chroma');
+chromaEl.innerHTML = DSP.NOTE.map(n => `<div><span></span>${n}</div>`).join('');
+const cBars = [...chromaEl.querySelectorAll('span')];
+let chromaTarget = [];
+function drawChroma(ch) { cBars.forEach((b, i) => { b.style.height = (ch ? ch[i] * 70 : 0) + 'px'; b.parentElement.classList.toggle('t', chromaTarget.includes(i)); }); }
+
+/* ---------------- Ejercicios ---------------- */
+let EX = null;
+const host = $('#ex');
+function complete(L, score) {
+  const first = !P.done[L.id];
+  P.done[L.id] = true; P.best[L.id] = Math.max(P.best[L.id] || 0, score); save(); renderNav();
+  const i = ALL.findIndex(x => x.id === L.id), nx = ALL[i + 1];
+  const b = document.createElement('div'); b.className = 'done-banner';
+  b.innerHTML = `<span>¡Lección lograda${score < 100 ? ' · puntaje ' + score : ''}! ${first ? '+10 XP' : ''}</span>` + (nx ? `<button class="btn">Siguiente: ${esc(nx.t)}</button>` : '<span>Terminaste el curso completo.</span>');
+  if (nx) b.querySelector('button').onclick = () => open(nx.id);
+  host.appendChild(b);
+}
+const msg = (t, cls = '') => { const m = host.querySelector('.msg'); if (m) { m.textContent = t; m.className = 'msg ' + cls; } };
+
+const T = {
+ check(L) {
+  host.innerHTML = `<div class="check">${L.items.map((it, i) => `<label><input type="checkbox" data-i="${i}"><span>${esc(it)}</span></label>`).join('')}</div>
+   <div class="exbar" style="margin-top:12px"><button class="btn felt" id="ok" disabled>Marcar como lograda</button><span class="msg">Autoevaluación: marca cada paso cuando lo hayas hecho en tu teclado.</span></div>`;
+  const boxes = [...host.querySelectorAll('input')], btn = host.querySelector('#ok');
+  if (P.done[L.id]) boxes.forEach(b => b.checked = true);
+  const upd = () => btn.disabled = !boxes.every(b => b.checked);
+  boxes.forEach(b => b.onchange = upd); upd();
+  btn.onclick = () => { btn.disabled = true; complete(L, 100); };
+  return {};
+ },
+ quiz(L) {
+  host.innerHTML = `<form class="quiz">${L.qs.map(([q, ops], i) => `<fieldset><legend>${i + 1}. ${esc(q)}</legend>${ops.map((o, j) => `<label><input type="radio" name="q${i}" value="${j}"><span>${esc(o)}</span></label>`).join('')}</fieldset>`).join('')}
+   <div class="exbar"><button class="btn felt">Revisar respuestas</button><span class="msg"></span></div></form>`;
+  const f = host.querySelector('form');
+  f.onsubmit = e => {
+   e.preventDefault(); let good = 0;
+   L.qs.forEach(([q, ops, ans], i) => {
+    f.querySelectorAll(`[name=q${i}]`).forEach(r => { const lab = r.parentElement; lab.classList.remove('right', 'wrong'); if (r.checked) lab.classList.add(+r.value === ans ? 'right' : 'wrong'); });
+    const sel = f.querySelector(`[name=q${i}]:checked`); if (sel && +sel.value === ans) good++;
+   });
+   if (good === L.qs.length) { msg('Todas correctas.', 'ok'); if (!f.dataset.done) { f.dataset.done = 1; complete(L, 100); } }
+   else msg(`${good} de ${L.qs.length} correctas. Revisa las marcadas en naranjo.`, 'bad');
+  };
+  return {};
+ },
+ notes(L) {
+  let i = 0, err = 0;
+  host.innerHTML = `<div class="seq">${L.seq.map((m, k) => `<span class="chip">${N(m)}${L.fing ? `<small>dedo ${L.fing[k]}</small>` : ''}</span>`).join('')}</div>
+   <div class="exbar"><button class="btn ghost" id="hear">Escuchar modelo</button><button class="btn ghost" id="rst">Reiniciar</button><span class="msg">Toca la nota marcada en rojo.</span></div>`;
+  const chips = [...host.querySelectorAll('.chip')];
+  const paint = () => { chips.forEach((c, k) => { c.classList.toggle('ok', k < i); c.classList.toggle('now', k === i); }); kb.target(i < L.seq.length ? [L.seq[i]] : []); chromaTarget = []; };
+  host.querySelector('#hear').onclick = () => play(L.seq.map(m => [m]), 0.5);
+  host.querySelector('#rst').onclick = () => { i = 0; err = 0; paint(); msg('Desde el principio.'); host.querySelector('.done-banner')?.remove(); };
+  paint();
+  return { onNote(m) {
+   if (i >= L.seq.length) return;
+   if (same(m, L.seq[i])) { i++; paint(); msg(i === L.seq.length ? 'Secuencia completa.' : 'Bien: ' + N(m), 'ok'); if (i === L.seq.length) complete(L, Math.max(40, 100 - err * 8)); }
+   else { err++; kb.bad(m); msg(`Sonó ${N(m)}; la nota esperada es ${N(L.seq[i])}.`, 'bad'); }
+  } };
+ },
+ chords(L) {
+  let i = 0, hold = 0, fails = 0;
+  host.innerHTML = `<div class="seq">${L.seq.map(c => `<span class="chip">${c}<small>${esc(DSP.chordLabel(c))}</small></span>`).join('')}</div>
+   <div><div class="big" id="cn"></div><div class="msg" style="margin-top:4px" id="cnotes"></div></div>
+   <div class="score"><i id="sc"></i></div>
+   <div class="exbar"><button class="btn ghost" id="hear">Escuchar acorde</button><button class="btn ghost" id="rst">Reiniciar</button><span class="msg">Mantén el acorde hasta que se llene la barra.</span></div>`;
+  const chips = [...host.querySelectorAll('.chip')], sc = host.querySelector('#sc');
+  const voicing = c => { const {root} = DSP.parseChord(c); return DSP.QUAL[DSP.parseChord(c).q].map(x => 48 + root + x + (root > 7 ? 0 : 12)); };
+  const paint = () => {
+   chips.forEach((c, k) => { c.classList.toggle('ok', k < i); c.classList.toggle('now', k === i); });
+   if (i < L.seq.length) { const c = L.seq[i]; host.querySelector('#cn').textContent = c + ' · ' + DSP.chordLabel(c); host.querySelector('#cnotes').textContent = 'Notas: ' + DSP.chordPcs(c).map(p => DSP.NOTE[p]).join(' – '); kb.target(voicing(c)); chromaTarget = DSP.chordPcs(c); }
+   else { kb.target([]); chromaTarget = []; }
+  };
+  const adv = () => { i++; hold = 0; sc.style.width = '0'; paint(); if (i === L.seq.length) { msg('Progresión completa.', 'ok'); complete(L, Math.max(50, 100 - fails * 5)); } else msg('¡Correcto! Siguiente acorde.', 'ok'); };
+  host.querySelector('#hear').onclick = () => i < L.seq.length && play([voicing(L.seq[i])], 1);
+  host.querySelector('#rst').onclick = () => { i = 0; hold = 0; paint(); host.querySelector('.done-banner')?.remove(); };
+  paint();
+  let lastWarn = 0;
+  return {
+   onFrame(f) {
+    if (i >= L.seq.length) return;
+    if (!f.ch) { hold = Math.max(0, hold - 1); sc.style.width = hold / 8 * 100 + '%'; return; }
+    const r = DSP.matchChord(f.ch, L.seq[i]);
+    if (r.ok) hold++; else { hold = Math.max(0, hold - 1); if (f.t - lastWarn > 1.5 && r.rival > r.score + 0.1 && r.rival > 0.6) { lastWarn = f.t; fails++; msg(`Suena más a ${DSP.chordLabel(r.rivalName)} (${r.rivalName}). Revisa las notas.`, 'bad'); } }
+    sc.style.width = Math.min(100, hold / 8 * 100) + '%';
+    if (hold >= 8) adv();
+   },
+   onMidiChord(h) {
+    if (i >= L.seq.length) return;
+    const pcs = new Set([...h].map(m => m % 12)), tg = DSP.chordPcs(L.seq[i]);
+    if (tg.every(p => pcs.has(p)) && [...pcs].every(p => tg.includes(p))) adv();
+   }
+  };
+ },
+ rhythm(L) {
+  let on = [], t0 = 0, t1 = 0, active = false;
+  host.innerHTML = `<div class="beats">${Array.from({length: 4 + L.beats}, (_, k) => `<span class="${k < 4 ? 'ci' : ''}"></span>`).join('')}</div>
+   <div class="exbar"><button class="btn felt" id="go2">Empezar (${L.bpm} bpm)</button><span class="msg">Los 4 círculos punteados son la cuenta de entrada.</span></div>`;
+  const dots = [...host.querySelectorAll('.beats span')], P = 60 / L.bpm;
+  host.querySelector('#go2').onclick = async e => {
+   await ctx(); if (!A.run && !A.midi && S.src !== 'midi') { msg('Primero activa una entrada arriba.', 'bad'); return; }
+   on = []; host.querySelector('.done-banner')?.remove(); e.target.disabled = true;
+   const start = A.ctx.currentTime + 0.4; t0 = start + 4 * P - P / 2; t1 = start + (4 + L.beats) * P; active = true;
+   dots.forEach((d, k) => { click(start + k * P, k % 4 === 0); setTimeout(() => { dots.forEach(x => x.classList.remove('on')); d.classList.add('on'); }, (start + k * P - A.ctx.currentTime) * 1000); });
+   msg('Escucha la cuenta… y toca en cada tiempo.');
+   setTimeout(() => {
+    active = false; e.target.disabled = false; dots.forEach(x => x.classList.remove('on'));
+    const r = DSP.rhythmScore(on, L.bpm, L.beats);
+    const tend = Math.abs(r.driftMs) < 10 ? 'tempo estable' : r.driftMs > 0 ? 'tiendes a atrasarte' : 'tiendes a apurarte';
+    msg(`${r.hits}/${L.beats} golpes · desviación media ${r.meanAbsMs} ms · ${tend} · puntaje ${r.score}`, r.ok ? 'ok' : 'bad');
+    if (r.ok) complete(L, r.score);
+   }, (t1 - A.ctx.currentTime + 0.6) * 1000);
+  };
+  return { onOnset(t) { if (active && t >= t0 && t <= t1 + P / 2) on.push(t); } };
+ },
+ ear(L) {
+  let round = 0, hits = 0, tgt = null, wait = false;
+  host.innerHTML = `<div class="big" id="er">Ronda 1 de ${L.rounds}</div>
+   <div class="exbar"><button class="btn felt" id="pl">Tocar nota</button><button class="btn ghost" id="rp" disabled>Repetir</button><span class="msg">Pulsa “Tocar nota”, escucha y respóndela en tu teclado.</span></div>`;
+  const pl = host.querySelector('#pl'), rp = host.querySelector('#rp');
+  kb.target([]); chromaTarget = [];
+  const next = async () => { tgt = L.pool[Math.floor(Math.random() * L.pool.length)]; await play([[tgt]], 1); wait = true; rp.disabled = false; pl.disabled = true; msg('¿Qué nota fue?'); };
+  pl.onclick = next; rp.onclick = () => play([[tgt]], 1);
+  return { onNote(m) {
+   if (!wait) return; wait = false; round++;
+   if (same(m, tgt) || ((m - tgt) % 12 + 12) % 12 === 0) { hits++; msg('¡Exacto! Era ' + DSP.NOTE[tgt % 12] + '.', 'ok'); }
+   else { msg(`Era ${DSP.NOTE[tgt % 12]}; tocaste ${DSP.NOTE[m % 12]}.`, 'bad'); kb.bad(m); }
+   const er = host.querySelector('#er');
+   if (round < L.rounds) { er.textContent = `Ronda ${round + 1} de ${L.rounds} · aciertos ${hits}`; pl.disabled = false; rp.disabled = true; }
+   else { er.textContent = `Resultado: ${hits} de ${L.rounds}`; if (hits >= L.rounds - 1) complete(L, hits * 20); else { msg('Te faltó poco. Vuelve a intentarlo.', 'bad'); round = 0; hits = 0; pl.disabled = false; rp.disabled = true; } }
+  } };
+ },
+ bright(L) {
+  const cap = {A: null, B: null}; let cur = null, acc = [], until = 0;
+  host.innerHTML = `<div class="cap">${['A', 'B'].map(k => `<div><b>${k === 'A' ? '(A) 003 Bright Piano' : '(B) 004 Mellow Piano'}</b><div class="big" id="v${k}">—</div><button class="btn ghost" data-k="${k}">Capturar ${k} (2 s)</button></div>`).join('')}</div>
+   <div class="exbar"><span class="msg">Pulsa capturar y toca el acorde de Do mayor de inmediato.</span></div>`;
+  kb.target([48, 52, 55, 60]); chromaTarget = [0, 4, 7];
+  host.querySelectorAll('[data-k]').forEach(b => b.onclick = async () => { await ctx(); if (!A.run) { msg('Primero activa el micrófono o sube una grabación.', 'bad'); return; } cur = b.dataset.k; acc = []; until = A.ctx.currentTime + 2.2; msg('Capturando ' + cur + '…'); });
+  return { onFrame(f) {
+   if (!cur) return;
+   if (f.cen && f.rms > S.sens * 1.5) acc.push(f.cen);
+   if (f.t > until) {
+    const k = cur; cur = null;
+    if (acc.length < 10) { msg('No escuché suficiente sonido. Repite la captura ' + k + '.', 'bad'); return; }
+    acc.sort((a, b) => a - b); cap[k] = acc[acc.length >> 1];
+    host.querySelector('#v' + k).textContent = Math.round(cap[k]) + ' Hz';
+    if (cap.A && cap.B) {
+     const d = Math.round((1 - cap.B / cap.A) * 100);
+     if (d >= 5) { msg(`La voz Mellow es ${d}% más opaca que la Bright. Esa es la dirección del sonido de “La Maison”.`, 'ok'); complete(L, 100); }
+     else msg(`La diferencia es de solo ${d}%. Revisa que cambiaste de voz y que tocaste con la misma fuerza.`, 'bad');
+    } else msg('Listo. Ahora captura la otra voz.', 'ok');
+   }
+  } };
+ }
+};
+
+/* ---------------- Navegación ---------------- */
+function renderNav() {
+  $('#nav').innerHTML = C.map((mod, mi) => `<h3>${mi + 1}. ${esc(mod.m)}</h3>` + mod.l.map(l => `<button data-id="${l.id}" class="${P.done[l.id] ? 'done' : ''} ${P.cur === l.id ? 'cur' : ''}"><span class="dot">${P.done[l.id] ? '✓' : ''}</span>${esc(l.t)}</button>`).join('')).join('');
+  $('#nav').querySelectorAll('button').forEach(b => b.onclick = () => { open(b.dataset.id); $('#nav').classList.remove('open'); });
+  const n = ALL.filter(l => P.done[l.id]).length;
+  $('#pct').textContent = Math.round(n / ALL.length * 100) + '%'; $('#pbar').style.width = n / ALL.length * 100 + '%'; $('#xp').textContent = n * 10 + ' XP';
+}
+function open(id) {
+  if (!P) return showWho();
+  const L = ALL.find(l => l.id === id) || ALL[0];
+  P.cur = L.id; save();
+  if (location.hash !== '#' + L.id) history.replaceState(null, '', '#' + L.id);
+  $('#crumb').textContent = `Módulo ${L.mi + 1} · ${L.mod}`;
+  $('#title').textContent = L.t; $('#theory').innerHTML = L.th; $('#tip').innerHTML = L.tip;
+  const audio = ['notes', 'chords', 'rhythm', 'ear', 'bright'].includes(L.type);
+  $('#live').style.display = audio ? '' : 'none'; $('#kb').style.display = audio ? '' : 'none';
+  kb.target([]); chromaTarget = [];
+  EX = T[L.type](L);
+  renderNav();
+  window.scrollTo({top: 0});
+}
+
+/* ---------------- Controles ---------------- */
+$('#src').value = S.src; $('#sens').value = S.sens; $('#oct').checked = S.oct; $('#a4').value = S.a4; $('#click').checked = S.click;
+$('#src').onchange = e => { S.src = e.target.value; save(); $('#go').textContent = S.src === 'file' ? 'Elegir grabación' : 'Activar entrada'; };
+$('#src').onchange({target: $('#src')});
+$('#go').onclick = () => { if (S.src === 'mic') startMic(); else if (S.src === 'midi') { A.midi = true; startMidi(); } else $('#file').click(); };
+$('#file').onchange = e => e.target.files[0] && startFile(e.target.files[0]);
+$('#sens').oninput = e => { S.sens = +e.target.value; save(); };
+$('#oct').onchange = e => { S.oct = e.target.checked; save(); };
+$('#a4').onchange = e => { S.a4 = Math.min(453, Math.max(427, +e.target.value || 440)); save(); };
+$('#click').onchange = e => { S.click = e.target.checked; save(); };
+$('#navt').onclick = () => $('#nav').classList.toggle('open');
+window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (P && id && id !== P.cur && ALL.some(l => l.id === id)) open(id); });
+
+/* ---------------- Perfiles ---------------- */
+const COLORS = ['#b3141f', '#1d5fa8', '#17713f', '#9a5b00', '#6b3fa0', '#0f7c84'];
+const pctOf = p => Math.round(ALL.filter(l => p.done[l.id]).length / ALL.length * 100);
+let editing = false, armed = null, booted = false;
+function renderWho() {
+  const f = $('#faces');
+  f.innerHTML = D.order.map(id => { const p = D.profiles[id]; return `<div class="face"><button class="pick" data-id="${id}"><span class="av" style="background:${COLORS[p.color % COLORS.length]}">${esc(p.name.slice(0, 1).toUpperCase())}</span><b>${esc(p.name)}</b><small>${pctOf(p)}% del curso</small></button>${editing ? `<button class="del" data-del="${id}">${armed === id ? '¿Seguro? Toca otra vez' : 'Borrar'}</button>` : ''}</div>`; }).join('') || '<p class="msg">Todavía no hay perfiles. Agrega el primero abajo.</p>';
+  f.querySelectorAll('.pick').forEach(b => b.onclick = () => choose(b.dataset.id));
+  f.querySelectorAll('.del').forEach(b => b.onclick = () => {
+    const id = b.dataset.del;
+    if (armed !== id) { armed = id; return renderWho(); }
+    delete D.profiles[id]; D.order = D.order.filter(x => x !== id); if (D.active === id) { D.active = null; P = null; } armed = null; save(); renderWho();
+  });
+  $('#edit').textContent = editing ? 'Listo' : 'Editar perfiles';
+  $('#edit').hidden = !D.order.length;
+}
+function showWho() { editing = false; armed = null; renderWho(); $('#who').hidden = false; $('#bk').value = ''; $('#bkmsg').textContent = ''; }
+function choose(id) {
+  D.active = id; P = D.profiles[id]; save();
+  $('#who').hidden = true; $('#me').textContent = P.name; $('#me').style.setProperty('--c', COLORS[P.color % COLORS.length]);
+  const h = location.hash.slice(1);
+  open(!booted && h && ALL.some(l => l.id === h) ? h : P.cur); booted = true;
+}
+$('#addf').onsubmit = e => {
+  e.preventDefault();
+  const name = $('#newname').value.trim().replace(/\s+/g, ' ').slice(0, 16);
+  if (!name) return;
+  if (D.order.some(id => D.profiles[id].name.toLowerCase() === name.toLowerCase())) { $('#addmsg').textContent = 'Ya existe un perfil con ese apodo.'; return; }
+  const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  D.profiles[id] = {name, color: D.order.length, done: {}, best: {}, cur: 'panel'}; D.order.push(id); save();
+  $('#newname').value = ''; $('#addmsg').textContent = ''; renderWho();
+};
+$('#edit').onclick = () => { editing = !editing; armed = null; renderWho(); };
+$('#me').onclick = showWho;
+$('#exp').onclick = async () => {
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify({v: 2, profiles: D.profiles, order: D.order}))));
+  $('#bk').value = code;
+  try { await navigator.clipboard.writeText(code); $('#bkmsg').textContent = 'Respaldo copiado. Pégalo en un correo o nota para guardarlo.'; }
+  catch (e) { $('#bk').select(); $('#bkmsg').textContent = 'Copia el texto del recuadro y guárdalo.'; }
+};
+$('#imp').onclick = () => {
+  try {
+    const d = JSON.parse(decodeURIComponent(escape(atob($('#bk').value.trim()))));
+    if (!d.profiles || !Array.isArray(d.order)) throw 0;
+    d.order.forEach(id => { if (d.profiles[id]) { D.profiles[id] = d.profiles[id]; if (!D.order.includes(id)) D.order.push(id); } });
+    save(); renderWho(); $('#bkmsg').textContent = 'Avance restaurado.';
+  } catch (e) { $('#bkmsg').textContent = 'Ese texto no es un respaldo válido.'; }
+};
+if (P) choose(D.active); else showWho();
+}
+</script>
+</body>
+</html>
